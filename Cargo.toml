@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-stable-diffusion = "0.1.9"
+stable-diffusion = { version = "0.1.9", default-features = false }
 candle = { package = "candle-core", version = "0.4.1" }
 image = { version = "0.24.7", default-features = false, features = ["jpeg", "png"] }
 wgpu = "22.1.0"
