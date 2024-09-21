@@ -9,3 +9,5 @@ candle = { package = "candle-core", version = "0.4.1" }
 image = { version = "0.24.7", default-features = false, features = ["jpeg", "png"] }
 wgpu = "22.1.0"
 lazy_static = "1.5.0"
+tokio = "1.40.0"
+futures = "0.3.30"

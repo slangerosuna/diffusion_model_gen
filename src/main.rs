@@ -1,7 +1,8 @@
 mod image_processing;
 use image_processing::*;
 
-fn main() {
-    println!("Hello, world!");
-    let _ = KERNEL_SHADER;
+#[tokio::main]
+async fn main() {
+    let mut image_processor = ImageProcessor::new().await;
+    image_processor.compile_shaders().await;
 }
