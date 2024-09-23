@@ -1,5 +1,5 @@
 @group(0) @binding(0) var inImage : texture_storage_2d<rgba8unorm, read>;
-@group(0) @binding(1) var kernel : texture_storage_2d<rgba16float, read>;
+@group(0) @binding(1) var kernel : texture_storage_2d<rgba32float, read>;
 @group(0) @binding(2) var outImage : texture_storage_2d<rgba8unorm, write>;
 
 @compute @workgroup_size(1, 1, 1)
