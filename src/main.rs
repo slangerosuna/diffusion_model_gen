@@ -1,10 +1,9 @@
 #![allow(incomplete_features)] // to suppress warning in following line
 #![feature(generic_const_exprs)]
 
-pub mod neural;
-pub mod kernel;
+pub mod shaders;
 
-use kernel::Kernel;
+use shaders::kernel::Kernel;
 
 #[tokio::main]
 async fn main() {
@@ -22,7 +21,6 @@ async fn main() {
 
     output.save("output.png").unwrap();
 }
-
 
 use image::{GenericImageView, ImageBuffer, Rgba};
 use tokio::join;

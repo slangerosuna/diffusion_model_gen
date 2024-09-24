@@ -1,3 +1,5 @@
+pub mod kernel;
+
 use tokio::join;
 use wgpu::ShaderModule;
 
