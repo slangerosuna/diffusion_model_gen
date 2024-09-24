@@ -1,10 +1,9 @@
-use crate::gpu::{pad_to_multiple_of_256, GPU};
+use super::{pad_to_multiple_of_256, GpuDevice};
 
-use image::ImageBuffer;
-use image::Rgba;
+use image::{ImageBuffer, Rgba};
 use wgpu::*;
 
-impl GPU {
+impl GpuDevice {
     pub async fn compile_kernel_shader(&self) -> ShaderModule {
         let kernel_shader = self.device.create_shader_module(ShaderModuleDescriptor {
             label: None,
@@ -18,7 +17,7 @@ impl GPU {
 pub struct Kernel(Texture);
 
 impl Kernel {
-    pub fn new(data: &[f32], i: u32, j: u32, gpu: &GPU) -> Self {
+    pub fn new(data: &[f32], i: u32, j: u32, gpu: &GpuDevice) -> Self {
         #[cfg(debug_assertions)]
         assert!(data.len() as u32 == i * j * 4);
 
@@ -69,7 +68,7 @@ impl Kernel {
     pub async fn apply_to_image(
         &self,
         image: ImageBuffer<Rgba<u8>, Vec<u8>>,
-        gpu: &GPU,
+        gpu: &GpuDevice,
     ) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
         let width = image.width();
         let height = image.height();
@@ -150,7 +149,7 @@ impl Kernel {
         output_texture: &Texture,
         width: u32,
         height: u32,
-        gpu: &GPU,
+        gpu: &GpuDevice,
     ) {
         #[cfg(debug_assertions)]
         print!("Applying kernel...\n");
@@ -263,10 +262,13 @@ impl Kernel {
         gpu.queue.submit(std::iter::once(encoder.finish()));
     }
 
-    pub fn gaussian_kernel<const I: usize, const J: usize>(gpu: &GPU) -> Self
+    pub fn gaussian_kernel<const I: usize, const J: usize>(gpu: &GpuDevice) -> Self
     where
         [(); I * J * 4]:,
     {
+        #[cfg(debug_assertions)]
+        assert!(I * J < 10000, "When creating a kernel larger than 100x100, such as the {}x{} one you are making, use `Kernel::big_gaussian_kernel` to avoid stack overflow", I, J);
+
         let mut kernel = [0.0; I * J * 4];
         let sigma = I as f32 / 3.0;
         let mut sum = 0.0;
@@ -292,7 +294,7 @@ impl Kernel {
         Self::new(&kernel, I as u32, J as u32, gpu)
     }
 
-    pub fn big_gaussian_kernel(gpu: &GPU, i: usize, j: usize) -> Self {
+    pub fn big_gaussian_kernel(gpu: &GpuDevice, i: usize, j: usize) -> Self {
         let mut kernel = Vec::with_capacity(i * j * 4);
         let sigma = i as f32 / 3.0;
         let mut sum = 0.0;
