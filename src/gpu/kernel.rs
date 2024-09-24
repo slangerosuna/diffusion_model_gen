@@ -247,4 +247,62 @@ impl Kernel {
         print!("Submitting work...\n");
         gpu.queue.submit(std::iter::once(encoder.finish()));
     }
+
+    pub fn gaussian_kernel<const I: usize, const J: usize>(gpu: &GPU) -> Self where [();I * J * 4]: {
+        let mut kernel = [0.0; I * J * 4];
+        let sigma = I as f32 / 3.0;
+        let mut sum = 0.0;
+
+        let center = (I / 2, J / 2);
+        for x in 0..I {
+            for y in 0..J {
+                let (rx, ry) = (x - center.0, y - center.1);
+                let value = (-(rx as f32 * rx as f32 + ry as f32 * ry as f32) / (2.0 * sigma * sigma)).exp();
+                kernel[(x * I + y) * 4] = value;
+                kernel[(x * I + y) * 4 + 1] = value;
+                kernel[(x * I + y) * 4 + 2] = value;
+                kernel[(x * I + y) * 4 + 3] = 1.0;
+                sum += value;
+            }
+        }
+        for i in 0..I * J * 4 {
+            kernel[i] /= sum;
+        }
+
+        Self::new(
+            &kernel,
+            I as u32,
+            J as u32,
+            gpu
+        )
+    }
+
+    pub fn big_gaussian_kernel(gpu: &GPU, i: usize, j: usize) -> Self {
+        let mut kernel = Vec::with_capacity(i * j * 4);
+        let sigma = i as f32 / 3.0;
+        let mut sum = 0.0;
+
+        let center = (i / 2, j / 2);
+        for x in 0..i {
+            for y in 0..j {
+                let (rx, ry) = (x - center.0, y - center.1);
+                let value = (-(rx as f32 * rx as f32 + ry as f32 * ry as f32) / (2.0 * sigma * sigma)).exp();
+                kernel[(x * i + y) * 4] = value;
+                kernel[(x * i + y) * 4 + 1] = value;
+                kernel[(x * i + y) * 4 + 2] = value;
+                kernel[(x * i + y) * 4 + 3] = 1.0;
+                sum += value;
+            }
+        }
+        for i in 0..i * j * 4 {
+            kernel[i] /= sum;
+        }
+
+        Self::new(
+            &kernel,
+            i as u32,
+            j as u32,
+            gpu
+        )
+    }
 }
