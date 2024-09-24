@@ -276,7 +276,7 @@ impl Kernel {
         let center = (I / 2, J / 2);
         for x in 0..I {
             for y in 0..J {
-                let (rx, ry) = (x - center.0, y - center.1);
+                let (rx, ry) = (x as i32 - center.0 as i32, y as i32 - center.1 as i32);
                 let value = (-(rx as f32 * rx as f32 + ry as f32 * ry as f32)
                     / (2.0 * sigma * sigma))
                     .exp();

@@ -30,7 +30,7 @@ pub struct GpuDevice {
     pub device: Device,
     pub queue: Queue,
     pub kernel_shader: Option<ShaderModule>,
-    pub neural_shaders: Vec<ShaderModule>,
+    pub convolution_shader: Option<ShaderModule>,
 }
 
 pub fn pad_to_multiple_of_256(n: u32) -> u32 {
@@ -63,14 +63,17 @@ impl GpuDevice {
             device,
             queue,
             kernel_shader: None,
-            neural_shaders: Vec::new(),
+            convolution_shader: None,
         })
     }
     pub async fn compile_shaders(&mut self) {
-        let (kernel_shader, neural_shaders) = join!(self.compile_kernel_shader(), self.compile_neural_shaders());
+        let (kernel_shader, convolution_shader) = join!(
+            self.compile_kernel_shader(),
+            self.compile_convolution_shader()
+        );
 
         self.kernel_shader = Some(kernel_shader);
-        self.neural_shaders = neural_shaders;
+        self.convolution_shader = Some(convolution_shader);
     }
 
     pub async fn texture_to_image(
