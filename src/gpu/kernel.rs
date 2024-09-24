@@ -1,6 +1,4 @@
-use crate::gpu::{
-    GPU, pad_to_multiple_of_256,
-};
+use crate::gpu::{pad_to_multiple_of_256, GPU};
 
 use image::ImageBuffer;
 use image::Rgba;
@@ -20,12 +18,7 @@ impl GPU {
 pub struct Kernel(Texture);
 
 impl Kernel {
-    pub fn new(
-        data: &[f32],
-        i: u32,
-        j: u32,
-        gpu: &GPU,
-    ) -> Self {
+    pub fn new(data: &[f32], i: u32, j: u32, gpu: &GPU) -> Self {
         #[cfg(debug_assertions)]
         assert!(data.len() as u32 == i * j * 4);
 
@@ -43,7 +36,10 @@ impl Kernel {
             sample_count: 1,
             dimension: TextureDimension::D2,
             format: TextureFormat::Rgba32Float,
-            usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_SRC | TextureUsages::STORAGE_BINDING | TextureUsages::COPY_DST,
+            usage: TextureUsages::TEXTURE_BINDING
+                | TextureUsages::COPY_SRC
+                | TextureUsages::STORAGE_BINDING
+                | TextureUsages::COPY_DST,
             view_formats: &[TextureFormat::Rgba32Float],
         });
 
@@ -91,7 +87,10 @@ impl Kernel {
             sample_count: 1,
             dimension: TextureDimension::D2,
             format: TextureFormat::Rgba8Unorm,
-            usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_SRC | TextureUsages::STORAGE_BINDING | TextureUsages::COPY_DST,
+            usage: TextureUsages::TEXTURE_BINDING
+                | TextureUsages::COPY_SRC
+                | TextureUsages::STORAGE_BINDING
+                | TextureUsages::COPY_DST,
             view_formats: &[TextureFormat::Rgba8Unorm],
         });
 
@@ -130,11 +129,15 @@ impl Kernel {
             sample_count: 1,
             dimension: TextureDimension::D2,
             format: TextureFormat::Rgba8Unorm,
-            usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_SRC | TextureUsages::STORAGE_BINDING | TextureUsages::COPY_DST,
+            usage: TextureUsages::TEXTURE_BINDING
+                | TextureUsages::COPY_SRC
+                | TextureUsages::STORAGE_BINDING
+                | TextureUsages::COPY_DST,
             view_formats: &[TextureFormat::Rgba8Unorm],
         });
 
-        self.apply(&input_texture, &output_texture, width, height, gpu).await;
+        self.apply(&input_texture, &output_texture, width, height, gpu)
+            .await;
 
         #[cfg(debug_assertions)]
         print!("Reading output texture...\n");
@@ -151,61 +154,67 @@ impl Kernel {
     ) {
         #[cfg(debug_assertions)]
         print!("Applying kernel...\n");
-        let bind_group_layout = gpu.device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-            label: None,
-            entries: &[
-                BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: ShaderStages::COMPUTE,
-                    ty: BindingType::StorageTexture {
-                        access: StorageTextureAccess::ReadOnly,
-                        format: TextureFormat::Rgba8Unorm,
-                        view_dimension: TextureViewDimension::D2,
+        let bind_group_layout = gpu
+            .device
+            .create_bind_group_layout(&BindGroupLayoutDescriptor {
+                label: None,
+                entries: &[
+                    BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: ShaderStages::COMPUTE,
+                        ty: BindingType::StorageTexture {
+                            access: StorageTextureAccess::ReadOnly,
+                            format: TextureFormat::Rgba8Unorm,
+                            view_dimension: TextureViewDimension::D2,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: ShaderStages::COMPUTE,
-                    ty: BindingType::StorageTexture {
-                        access: StorageTextureAccess::ReadOnly,
-                        format: TextureFormat::Rgba32Float,
-                        view_dimension: TextureViewDimension::D2,
+                    BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: ShaderStages::COMPUTE,
+                        ty: BindingType::StorageTexture {
+                            access: StorageTextureAccess::ReadOnly,
+                            format: TextureFormat::Rgba32Float,
+                            view_dimension: TextureViewDimension::D2,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: ShaderStages::COMPUTE,
-                    ty: BindingType::StorageTexture {
-                        access: StorageTextureAccess::WriteOnly,
-                        format: TextureFormat::Rgba8Unorm,
-                        view_dimension: TextureViewDimension::D2,
+                    BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: ShaderStages::COMPUTE,
+                        ty: BindingType::StorageTexture {
+                            access: StorageTextureAccess::WriteOnly,
+                            format: TextureFormat::Rgba8Unorm,
+                            view_dimension: TextureViewDimension::D2,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-            ],
-        });
+                ],
+            });
 
-        let pipeline_layout = gpu.device.create_pipeline_layout(&PipelineLayoutDescriptor {
-            label: None,
-            bind_group_layouts: &[&bind_group_layout],
-            push_constant_ranges: &[],
-        });
+        let pipeline_layout = gpu
+            .device
+            .create_pipeline_layout(&PipelineLayoutDescriptor {
+                label: None,
+                bind_group_layouts: &[&bind_group_layout],
+                push_constant_ranges: &[],
+            });
 
         #[cfg(debug_assertions)]
         assert!(gpu.kernel_shader.is_some());
 
         let kernel_shader = gpu.kernel_shader.as_ref().unwrap();
 
-        let pipeline = gpu.device.create_compute_pipeline(&ComputePipelineDescriptor {
-            label: None,
-            layout: Some(&pipeline_layout),
-            module: kernel_shader,
-            entry_point: "main",
-            compilation_options: Default::default(),
-            cache: None,
-        });
+        let pipeline = gpu
+            .device
+            .create_compute_pipeline(&ComputePipelineDescriptor {
+                label: None,
+                layout: Some(&pipeline_layout),
+                module: kernel_shader,
+                entry_point: "main",
+                compilation_options: Default::default(),
+                cache: None,
+            });
 
         let bind_group = gpu.device.create_bind_group(&BindGroupDescriptor {
             label: None,
@@ -213,22 +222,28 @@ impl Kernel {
             entries: &[
                 BindGroupEntry {
                     binding: 0,
-                    resource: BindingResource::TextureView(&input_texture.create_view(&TextureViewDescriptor::default())),
+                    resource: BindingResource::TextureView(
+                        &input_texture.create_view(&TextureViewDescriptor::default()),
+                    ),
                 },
                 BindGroupEntry {
                     binding: 1,
-                    resource: BindingResource::TextureView(&self.0.create_view(&TextureViewDescriptor::default())),
+                    resource: BindingResource::TextureView(
+                        &self.0.create_view(&TextureViewDescriptor::default()),
+                    ),
                 },
                 BindGroupEntry {
                     binding: 2,
-                    resource: BindingResource::TextureView(&output_texture.create_view(&TextureViewDescriptor::default())),
+                    resource: BindingResource::TextureView(
+                        &output_texture.create_view(&TextureViewDescriptor::default()),
+                    ),
                 },
             ],
         });
 
-        let mut encoder = gpu.device.create_command_encoder(&CommandEncoderDescriptor {
-            label: None,
-        });
+        let mut encoder = gpu
+            .device
+            .create_command_encoder(&CommandEncoderDescriptor { label: None });
 
         #[cfg(debug_assertions)]
         print!("Dispatching workgroups...\n");
@@ -248,7 +263,10 @@ impl Kernel {
         gpu.queue.submit(std::iter::once(encoder.finish()));
     }
 
-    pub fn gaussian_kernel<const I: usize, const J: usize>(gpu: &GPU) -> Self where [();I * J * 4]: {
+    pub fn gaussian_kernel<const I: usize, const J: usize>(gpu: &GPU) -> Self
+    where
+        [(); I * J * 4]:,
+    {
         let mut kernel = [0.0; I * J * 4];
         let sigma = I as f32 / 3.0;
         let mut sum = 0.0;
@@ -257,7 +275,9 @@ impl Kernel {
         for x in 0..I {
             for y in 0..J {
                 let (rx, ry) = (x - center.0, y - center.1);
-                let value = (-(rx as f32 * rx as f32 + ry as f32 * ry as f32) / (2.0 * sigma * sigma)).exp();
+                let value = (-(rx as f32 * rx as f32 + ry as f32 * ry as f32)
+                    / (2.0 * sigma * sigma))
+                    .exp();
                 kernel[(x * I + y) * 4] = value;
                 kernel[(x * I + y) * 4 + 1] = value;
                 kernel[(x * I + y) * 4 + 2] = value;
@@ -269,12 +289,7 @@ impl Kernel {
             kernel[i] /= sum;
         }
 
-        Self::new(
-            &kernel,
-            I as u32,
-            J as u32,
-            gpu
-        )
+        Self::new(&kernel, I as u32, J as u32, gpu)
     }
 
     pub fn big_gaussian_kernel(gpu: &GPU, i: usize, j: usize) -> Self {
@@ -286,7 +301,9 @@ impl Kernel {
         for x in 0..i {
             for y in 0..j {
                 let (rx, ry) = (x - center.0, y - center.1);
-                let value = (-(rx as f32 * rx as f32 + ry as f32 * ry as f32) / (2.0 * sigma * sigma)).exp();
+                let value = (-(rx as f32 * rx as f32 + ry as f32 * ry as f32)
+                    / (2.0 * sigma * sigma))
+                    .exp();
                 kernel[(x * i + y) * 4] = value;
                 kernel[(x * i + y) * 4 + 1] = value;
                 kernel[(x * i + y) * 4 + 2] = value;
@@ -298,11 +315,6 @@ impl Kernel {
             kernel[i] /= sum;
         }
 
-        Self::new(
-            &kernel,
-            i as u32,
-            j as u32,
-            gpu
-        )
+        Self::new(&kernel, i as u32, j as u32, gpu)
     }
 }

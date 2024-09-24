@@ -1,8 +1,8 @@
 pub mod kernel;
 
-use image::{ImageBuffer, Rgba, GenericImageView};
-use wgpu::*;
+use image::{GenericImageView, ImageBuffer, Rgba};
 use tokio::join;
+use wgpu::*;
 
 pub struct GPU {
     pub device: Device,
@@ -28,7 +28,8 @@ impl GPU {
         let (device, queue) = adapter
             .request_device(
                 &DeviceDescriptor {
-                    required_features: Features::default() | Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
+                    required_features: Features::default()
+                        | Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
                     ..Default::default()
                 },
                 None,
@@ -36,7 +37,11 @@ impl GPU {
             .await
             .unwrap();
 
-        Self { device, queue, kernel_shader: None }
+        Self {
+            device,
+            queue,
+            kernel_shader: None,
+        }
     }
     pub async fn compile_shaders(&mut self) {
         let (kernel_shader,) = join!(self.compile_kernel_shader());
@@ -44,10 +49,17 @@ impl GPU {
         self.kernel_shader = Some(kernel_shader);
     }
 
-    pub async fn texture_to_image(&self, texture: &Texture, width: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+    pub async fn texture_to_image(
+        &self,
+        texture: &Texture,
+        width: u32,
+    ) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
         let size = texture.size();
         #[cfg(debug_assertions)]
-        print!("Converting texture to image with size {}x{}...\n", width, size.height);
+        print!(
+            "Converting texture to image with size {}x{}...\n",
+            width, size.height
+        );
         let buffer_size = (size.width * size.height * 4) as u64;
         let buffer_desc = BufferDescriptor {
             label: None,
@@ -57,7 +69,9 @@ impl GPU {
         };
         let buffer = self.device.create_buffer(&buffer_desc);
 
-        let mut encoder = self.device.create_command_encoder(&CommandEncoderDescriptor { label: None });
+        let mut encoder = self
+            .device
+            .create_command_encoder(&CommandEncoderDescriptor { label: None });
         encoder.copy_texture_to_buffer(
             ImageCopyTexture {
                 texture: &texture,
@@ -79,15 +93,12 @@ impl GPU {
         self.queue.submit(Some(encoder.finish()));
         let buffer_slice = buffer.slice(..);
 
-        buffer_slice.map_async(
-            MapMode::Read, 
-            |result| {
-                if let Err(e) = result {
-                    eprintln!("Failed to map buffer: {:?}", e);
-                    return;
-                }
+        buffer_slice.map_async(MapMode::Read, |result| {
+            if let Err(e) = result {
+                eprintln!("Failed to map buffer: {:?}", e);
+                return;
             }
-        );
+        });
         self.device.poll(Maintain::Wait);
 
         let data = buffer_slice.get_mapped_range();
