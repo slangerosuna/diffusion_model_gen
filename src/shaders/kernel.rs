@@ -254,7 +254,7 @@ impl Kernel {
 
             cpass.set_pipeline(&pipeline);
             cpass.set_bind_group(0, &bind_group, &[]);
-            cpass.dispatch_workgroups(width, height, 1);
+            cpass.dispatch_workgroups(f32::ceil(width as f32 / 16.) as u32, f32::ceil(height as f32 / 16.) as u32, 1);
         }
 
         #[cfg(debug_assertions)]
@@ -299,17 +299,19 @@ impl Kernel {
         let sigma = i as f32 / 3.0;
         let mut sum = 0.0;
 
-        let center = (i / 2, j / 2);
+        let center = ((i / 2) as i32, (j / 2) as i32);
         for x in 0..i {
             for y in 0..j {
-                let (rx, ry) = (x - center.0, y - center.1);
+                let (rx, ry) = (x as i32 - center.0, y as i32- center.1);
                 let value = (-(rx as f32 * rx as f32 + ry as f32 * ry as f32)
                     / (2.0 * sigma * sigma))
                     .exp();
-                kernel[(x * i + y) * 4] = value;
-                kernel[(x * i + y) * 4 + 1] = value;
-                kernel[(x * i + y) * 4 + 2] = value;
-                kernel[(x * i + y) * 4 + 3] = 1.0;
+                
+                kernel.push(value);
+                kernel.push(value);
+                kernel.push(value);
+                kernel.push(1.0);
+
                 sum += value;
             }
         }

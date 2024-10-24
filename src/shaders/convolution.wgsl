@@ -1,9 +1,9 @@
 @group(0) @binding(0)
-var curLayer : texture_storage_2d<rgba8unorm, read>;
+var curLayer : texture_storage_2d<rgba16unorm, read>;
 @group(0) @binding(1)
 var kernel : texture_storage_3d<rgba32float, read>; // depth is 4
 @group(0) @binding(2)
-var nextLayer : texture_storage_2d<rgba8unorm, write>;
+var nextLayer : texture_storage_2d<rgba16unorm, write>;
 @group(0) @binding(3)
 var<uniform> layerOffset : vec2<i32>;
 
@@ -25,30 +25,30 @@ fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
 			if (signedImageCoord.x < 0 || signedImageCoord.y < 0) { continue; }
 			let imageCoord : vec2<u32> = vec2<u32>(signedImageCoord);
 
-			var pixel : vec4<f32> = vec4<f32>(0.0, 0.0, 0.0, 0.0);
-			if (imageCoord.x < textureDimensions(curLayer).x && imageCoord.y < textureDimensions(curLayer).y) {
-				pixel = vec4<f32>(textureLoad(curLayer, vec2<i32>(imageCoord)));
-			}
-			else {
-				let edgeCoord : vec2<u32> = vec2<u32>(clamp(imageCoord.x, 0u, textureDimensions(curLayer).x - 1u), clamp(imageCoord.y, 0u, textureDimensions(curLayer).y - 1u));
-				pixel = vec4<f32>(textureLoad(curLayer, vec2<i32>(edgeCoord)));
-			}
+			let edgeCoord : vec2<u32> = vec2<u32>(
+				clamp(imageCoord.x, 0u, textureDimensions(curLayer).x - 1u),
+				clamp(imageCoord.y, 0u, textureDimensions(curLayer).y - 1u),
+			);
+			let pixel = (vec4<f32>(textureLoad(curLayer, vec2<i32>(edgeCoord))) - vec4<f32>(0.5, 0.5, 0.5, 0.5)) * vec4<f32>(256, 256, 256, 256);
+
 			let kernelValue : mat4x4<f32> = mat4x4<f32>(
                 vec4<f32>(textureLoad(kernel, vec3<u32>(coord, 0))),
                 vec4<f32>(textureLoad(kernel, vec3<u32>(coord, 1))),
                 vec4<f32>(textureLoad(kernel, vec3<u32>(coord, 2))),
-                vec4<f32>(textureLoad(kernel, vec3<u32>(coord, 3)))
+                vec4<f32>(textureLoad(kernel, vec3<u32>(coord, 3))),
             );
 			sum = sum + kernelValue * pixel;
 		}
 	}
 
+	let leakyRelu : f32 = 1./16.;
     sum = vec4<f32>(
-        sum.x / (1.0 + abs(sum.x)),
-        sum.y / (1.0 + abs(sum.y)),
-        sum.z / (1.0 + abs(sum.z)),
-        sum.w / (1.0 + abs(sum.w))
+		max(0.0, sum.x) + leakyRelu * min(0.0, sum.x),
+		max(0.0, sum.y) + leakyRelu * min(0.0, sum.y),
+		max(0.0, sum.z) + leakyRelu * min(0.0, sum.z),
+		max(0.0, sum.w) + leakyRelu * min(0.0, sum.w),
     );
+	sum = sum * vec4<f32>(1 / 256, 1 / 256, 1 / 256, 1 / 256) + vec4<f32>(0.5, 0.5, 0.5, 0.5);
 
 	textureStore(nextLayer, vec2<i32>(pixelCoord), vec4<f32>(sum));
 }

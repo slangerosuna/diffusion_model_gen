@@ -11,7 +11,7 @@ async fn main() {
     gpu.compile_shaders().await;
 
     let input = image::open("input.png").unwrap().to_rgba8();
-    let kernel = Kernel::gaussian_kernel::<10, 10>(&gpu);
+    let kernel = Kernel::big_gaussian_kernel(&gpu, 150, 150);
 
     #[cfg(debug_assertions)]
     let now = std::time::Instant::now();
@@ -67,13 +67,13 @@ impl GpuDevice {
         })
     }
     pub async fn compile_shaders(&mut self) {
-        let (kernel_shader, convolution_shader) = join!(
+        let (kernel_shader,/* convolution_shader*/) = join!(
             self.compile_kernel_shader(),
-            self.compile_convolution_shader()
+            //self.compile_convolution_shader()
         );
 
         self.kernel_shader = Some(kernel_shader);
-        self.convolution_shader = Some(convolution_shader);
+        //self.convolution_shader = Some(convolution_shader);
     }
 
     pub async fn texture_to_image(
